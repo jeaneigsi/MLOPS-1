@@ -24,6 +24,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset, random_split
+from torch.cuda.amp import autocast, GradScaler
 from torchvision import datasets
 from tqdm import tqdm
 
@@ -73,6 +74,10 @@ def parse_args():
     parser.add_argument(
         "--use-clearml-dataset", action="store_true",
         help="Utiliser un dataset ClearML"
+    )
+    parser.add_argument(
+        "--fp16", action="store_true",
+        help="Utiliser Mixed Precision Training (FP16) pour accélérer l'entraînement"
     )
     return parser.parse_args()
 
@@ -152,10 +157,16 @@ def train_one_epoch(
     optimizer: optim.Optimizer,
     device: str,
     task: Task,
-    epoch: int
+    epoch: int,
+    scaler: GradScaler = None,
+    use_fp16: bool = False
 ) -> float:
     """
     Entraîne le modèle pendant une epoch.
+    
+    Args:
+        scaler: GradScaler pour Mixed Precision (FP16)
+        use_fp16: Si True, utilise Mixed Precision Training
     
     Returns:
         Loss moyenne de l'epoch
@@ -165,15 +176,28 @@ def train_one_epoch(
     correct = 0
     total = 0
     
-    pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} [Train]")
+    pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} [Train{'⚡FP16' if use_fp16 else ''}]")
     for batch_idx, (inputs, labels) in enumerate(pbar):
         inputs, labels = inputs.to(device), labels.to(device)
         
         optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+        
+        # Mixed Precision Training (FP16)
+        if use_fp16 and scaler is not None:
+            with autocast():
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+            
+            # Scale loss et backward
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            # FP32 standard
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
         
         running_loss += loss.item()
         _, predicted = outputs.max(1)
@@ -202,10 +226,14 @@ def validate(
     criterion: nn.Module,
     device: str,
     task: Task,
-    epoch: int
+    epoch: int,
+    use_fp16: bool = False
 ) -> Tuple[float, float]:
     """
     Évalue le modèle sur le set de validation.
+    
+    Args:
+        use_fp16: Si True, utilise autocast pour la validation
     
     Returns:
         Tuple (loss moyenne, accuracy)
@@ -216,11 +244,18 @@ def validate(
     total = 0
     
     with torch.no_grad():
-        pbar = tqdm(val_loader, desc=f"Epoch {epoch+1} [Val]")
+        pbar = tqdm(val_loader, desc=f"Epoch {epoch+1} [Val{'⚡FP16' if use_fp16 else ''}]")
         for inputs, labels in pbar:
             inputs, labels = inputs.to(device), labels.to(device)
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
+            
+            # Mixed Precision pour validation aussi
+            if use_fp16:
+                with autocast():
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
+            else:
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
             
             running_loss += loss.item()
             _, predicted = outputs.max(1)
@@ -256,7 +291,8 @@ def main():
         "epochs": args.epochs,
         "batch_size": args.batch_size,
         "learning_rate": args.lr,
-        "model_architecture": args.model
+        "model_architecture": args.model,
+        "precision": "FP16" if args.fp16 else "FP32"
     })
     
     print("=" * 60)
@@ -266,6 +302,7 @@ def main():
     print(f"Batch size: {args.batch_size}")
     print(f"Learning rate: {args.lr}")
     print(f"Modèle: {args.model}")
+    print(f"Précision: {'⚡ FP16 (Mixed Precision)' if args.fp16 else 'FP32'}")
     print("=" * 60)
     
     device = get_device()
@@ -318,6 +355,15 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
     
+    # Mixed Precision (FP16) - GradScaler
+    scaler = GradScaler() if args.fp16 and device == "cuda" else None
+    use_fp16 = args.fp16 and device == "cuda"
+    
+    if args.fp16 and device != "cuda":
+        print("⚠️  FP16 désactivé: nécessite un GPU CUDA")
+    elif use_fp16:
+        print("✓ Mixed Precision (FP16) activé")
+    
     # Entraînement
     best_accuracy = 0.0
     best_model_path = None
@@ -325,14 +371,16 @@ def main():
     for epoch in range(args.epochs):
         print(f"\n--- Epoch {epoch + 1}/{args.epochs} ---")
         
-        # Entraînement
+        # Entraînement avec FP16
         train_loss = train_one_epoch(
-            model, train_loader, criterion, optimizer, device, task, epoch
+            model, train_loader, criterion, optimizer, device, task, epoch,
+            scaler=scaler, use_fp16=use_fp16
         )
         
-        # Validation
+        # Validation avec FP16
         val_loss, val_accuracy = validate(
-            model, val_loader, criterion, device, task, epoch
+            model, val_loader, criterion, device, task, epoch,
+            use_fp16=use_fp16
         )
         
         # Log du learning rate
@@ -356,7 +404,8 @@ def main():
                 "val_loss": val_loss,
                 "train_loss": train_loss,
                 "classes": class_names,
-                "model_architecture": args.model
+                "model_architecture": args.model,
+                "precision": "FP16" if use_fp16 else "FP32"
             }
             
             save_model(model, best_model_path, metadata)

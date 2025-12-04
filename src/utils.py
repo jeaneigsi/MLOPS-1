@@ -179,7 +179,7 @@ def save_model(
 
 def load_model(
     path: Path,
-    num_classes: int = 5,
+    num_classes: int = None,
     model_name: str = "resnet18",
     device: str = "cpu"
 ) -> Tuple[nn.Module, Optional[Dict[str, Any]]]:
@@ -188,7 +188,7 @@ def load_model(
     
     Args:
         path: Chemin du fichier modèle
-        num_classes: Nombre de classes
+        num_classes: Nombre de classes (auto-détecté depuis metadata si None)
         model_name: Architecture du modèle
         device: Device ('cpu' ou 'cuda')
         
@@ -197,18 +197,34 @@ def load_model(
     """
     path = Path(path)
     
-    # Créer le modèle et charger les poids
-    model = create_model(num_classes=num_classes, pretrained=False, model_name=model_name)
-    model.load_state_dict(torch.load(path, map_location=device))
-    model.to(device)
-    model.eval()
-    
-    # Charger les métadonnées si elles existent
+    # D'abord charger les métadonnées pour obtenir num_classes
     metadata = None
     metadata_path = path.with_suffix(".json")
     if metadata_path.exists():
         with open(metadata_path, "r", encoding="utf-8") as f:
             metadata = json.load(f)
+    
+    # Déterminer num_classes depuis les métadonnées ou le défaut
+    if num_classes is None:
+        if metadata and "classes" in metadata:
+            num_classes = len(metadata["classes"])
+            print(f"Classes détectées depuis metadata: {metadata['classes']}")
+        elif metadata and "num_classes" in metadata:
+            num_classes = metadata["num_classes"]
+        else:
+            # Défaut pour Cats vs Dogs
+            num_classes = len(DEFAULT_CLASSES)
+            print(f"Utilisation du défaut: {num_classes} classes ({DEFAULT_CLASSES})")
+    
+    # Récupérer l'architecture depuis les métadonnées si disponible
+    if metadata and "model_architecture" in metadata:
+        model_name = metadata["model_architecture"]
+    
+    # Créer le modèle et charger les poids
+    model = create_model(num_classes=num_classes, pretrained=False, model_name=model_name)
+    model.load_state_dict(torch.load(path, map_location=device))
+    model.to(device)
+    model.eval()
     
     return model, metadata
 
