@@ -146,7 +146,18 @@ def initialize_model(args) -> Tuple[torch.nn.Module, list]:
         if model_path:
             print(f"Utilisation du dernier modèle local: {model_path}")
             model, metadata = load_model(model_path, device=DEVICE)
-            classes = metadata.get("classes", DEFAULT_CLASSES) if metadata else DEFAULT_CLASSES
+            # Valider les classes - ignorer si ce sont des noms de dossiers incorrects
+            if metadata and "classes" in metadata:
+                detected_classes = metadata["classes"]
+                # Vérifier si les classes sont valides (pas train/val)
+                if "train" in detected_classes or "val" in detected_classes:
+                    print(f"⚠️  Classes invalides détectées: {detected_classes}")
+                    print(f"    Utilisation des classes par défaut: {DEFAULT_CLASSES}")
+                    classes = DEFAULT_CLASSES
+                else:
+                    classes = detected_classes
+            else:
+                classes = DEFAULT_CLASSES
             return model, classes
         else:
             # Mode démo sans modèle réel
@@ -318,8 +329,7 @@ def create_interface(classes: List[str], share: bool = False, port: int = 7860):
     """Crée et lance l'interface Gradio."""
     
     with gr.Blocks(
-        title="Classification d'Images - MLOps",
-        theme=gr.themes.Soft()
+        title="Classification d'Images - MLOps"
     ) as demo:
         
         gr.Markdown("""
