@@ -1,0 +1,52 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ClearML
+.clearml/
+*.clearml
+
+# Local state
+.watcher_state.json
+.last_processed_dataset
+
+# Models (keep structure, ignore weights)
+models/*.pth
+models/*.pt
+models/*.json
+
+# Data (keep structure)
+data/feedback_labeled/*
+!data/feedback_labeled/.gitkeep
+
+# Demo dataset
+demo_dataset/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Temporary files
+tmp/
+temp/
+*.tmp
