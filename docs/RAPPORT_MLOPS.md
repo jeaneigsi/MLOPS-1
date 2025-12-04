@@ -155,6 +155,36 @@ $$x_{norm} = \frac{x - \mu}{\sigma}$$
 
 Avec $\mu = [0.485, 0.456, 0.406]$ et $\sigma = [0.229, 0.224, 0.225]$ (statistiques ImageNet).
 
+#### 3.2.1 Extension Dynamique des Classes (Nouveau Label)
+
+Une fonctionnalité clé de l'interface est la possibilité d'**ajouter de nouvelles classes** au modèle via le champ "Nouveau label". Cela permet le **Continuous Learning** :
+
+**Cas d'usage :**
+- Le modèle initial est entraîné sur 2 classes : `cat` et `dog`
+- Un utilisateur uploade une image de **lapin** 🐰
+- Le modèle prédit "cat" (classe la plus proche)
+- L'utilisateur corrige en saisissant "rabbit" dans le champ "Nouveau label"
+- L'image est sauvegardée dans `data/feedback_labeled/rabbit/`
+
+**Structure résultante :**
+
+```
+data/feedback_labeled/
+├── cat/           # Corrections vers "cat"
+├── dog/           # Corrections vers "dog"
+└── rabbit/        # 🆕 Nouvelle classe créée dynamiquement
+```
+
+**Évolution du modèle :**
+
+$$\text{Classes}_{v1} = \{\text{cat}, \text{dog}\} \xrightarrow{\text{feedback}} \text{Classes}_{v2} = \{\text{cat}, \text{dog}, \text{rabbit}\}$$
+
+Lors du réentraînement, le modèle adapte automatiquement sa couche de sortie :
+
+$$\text{FC}: 512 \rightarrow 2 \quad \Rightarrow \quad \text{FC}: 512 \rightarrow 3$$
+
+Cette approche permet une **amélioration continue** du modèle sans intervention manuelle sur le code.
+
 ### 3.3 Versioning des Données (`dataset_versioning.py`)
 
 Le versioning ClearML permet de :

@@ -410,8 +410,14 @@ ce qui déclenche automatiquement un réentraînement du modèle via ClearML Pip
         )
         
         def submit_feedback(image, dropdown_label, text_label, prediction_display):
-            # Priorité au dropdown, sinon au texte
-            label = dropdown_label if dropdown_label else text_label
+            # Priorité au champ texte (nouveau label) pour permettre l'ajout de nouvelles classes
+            # Si le champ texte est rempli, il écrase la sélection du dropdown
+            if text_label and text_label.strip():
+                label = text_label.strip()
+            elif dropdown_label:
+                label = dropdown_label
+            else:
+                label = None
             return handle_feedback(image, label, prediction_display)
         
         feedback_btn.click(
