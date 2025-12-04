@@ -380,7 +380,7 @@ def main():
             auto_delete_file=False
         )
         output_model.update_design(
-            config={
+            config_dict={
                 "architecture": args.model,
                 "num_classes": num_classes,
                 "classes": class_names
@@ -393,31 +393,50 @@ def main():
     print("✓ Tâche ClearML terminée")
 
 
-def create_demo_dataset(path: Path, num_classes: int = 5, images_per_class: int = 10):
+def create_demo_dataset(path: Path, num_classes: int = 2, images_per_class: int = 50):
     """
-    Crée un dataset de démonstration avec des images synthétiques.
+    Crée un dataset de démonstration Cats vs Dogs avec des images synthétiques.
     Utile pour tester le pipeline sans vrai dataset.
     """
     import random
-    from PIL import Image
+    from PIL import Image, ImageDraw
     
     path = Path(path)
-    for i in range(num_classes):
-        class_dir = path / f"class_{i}"
+    class_names = ["cat", "dog"]
+    
+    for class_name in class_names:
+        class_dir = path / class_name
         class_dir.mkdir(parents=True, exist_ok=True)
         
         for j in range(images_per_class):
-            # Créer une image RGB aléatoire
-            color = (
-                random.randint(50, 200) + i * 10,
-                random.randint(50, 200),
-                random.randint(50, 200)
-            )
+            # Couleurs différentes pour chaque classe
+            if class_name == "cat":
+                color = (
+                    random.randint(200, 255),
+                    random.randint(150, 200),
+                    random.randint(150, 200)
+                )
+            else:
+                color = (
+                    random.randint(150, 200),
+                    random.randint(150, 200),
+                    random.randint(200, 255)
+                )
+            
             img = Image.new("RGB", (224, 224), color)
-            img.save(class_dir / f"sample_{j}.jpg")
+            draw = ImageDraw.Draw(img)
+            
+            # Ajouter des formes pour différencier
+            for _ in range(20):
+                x, y = random.randint(0, 200), random.randint(0, 200)
+                r = random.randint(5, 20)
+                shape_color = tuple(random.randint(50, 200) for _ in range(3))
+                draw.ellipse([x, y, x+r, y+r], fill=shape_color)
+            
+            img.save(class_dir / f"{class_name}_{j:04d}.jpg", "JPEG", quality=90)
     
     print(f"Dataset de démonstration créé: {path}")
-    print(f"  - {num_classes} classes")
+    print(f"  - Classes: {class_names}")
     print(f"  - {images_per_class} images/classe")
 
 

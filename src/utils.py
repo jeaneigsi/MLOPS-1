@@ -32,12 +32,12 @@ MODELS_DIR = PROJECT_ROOT / "models"
 CONFIG_DIR = PROJECT_ROOT / "config"
 
 # Configuration ClearML
-CLEARML_PROJECT_NAME = "MLOps_Image_Classification"
-CLEARML_DATASET_BASE_NAME = "image_classification_base"
-CLEARML_DATASET_FEEDBACK_NAME = "image_classification_feedback"
+CLEARML_PROJECT_NAME = "MLOps_CatsVsDogs"
+CLEARML_DATASET_BASE_NAME = "cats_vs_dogs_base"
+CLEARML_DATASET_FEEDBACK_NAME = "cats_vs_dogs_feedback"
 
-# Classes par défaut (à adapter selon votre dataset)
-DEFAULT_CLASSES = ["class_0", "class_1", "class_2", "class_3", "class_4"]
+# Classes pour Cats vs Dogs
+DEFAULT_CLASSES = ["cat", "dog"]
 
 # Paramètres d'entraînement par défaut
 DEFAULT_BATCH_SIZE = 32

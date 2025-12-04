@@ -1,6 +1,6 @@
-# MLOps Image Classification with ClearML
+# MLOps Cats vs Dogs Classification with ClearML 🐱🐕
 
-Projet MLOps complet pour la classification d'images avec :
+Projet MLOps complet pour la classification **Cats vs Dogs** avec :
 - 🔄 Boucle de feedback utilisateur via Gradio
 - 📦 Versioning automatique des datasets
 - 🚀 Pipeline de réentraînement automatique
@@ -11,17 +11,25 @@ Projet MLOps complet pour la classification d'images avec :
 ```
 mlops_clearml_project/
 ├── config/
-│   └── clearml.conf           # Configuration ClearML
+│   └── clearml.conf              # Configuration ClearML
 ├── data/
-│   └── feedback_labeled/      # Images annotées par les utilisateurs
-├── models/                    # Modèles sauvegardés localement
+│   ├── cats_vs_dogs/             # Dataset principal
+│   │   ├── train/
+│   │   │   ├── cat/
+│   │   │   └── dog/
+│   │   └── val/
+│   │       ├── cat/
+│   │       └── dog/
+│   └── feedback_labeled/         # Images annotées par les utilisateurs
+├── models/                       # Modèles sauvegardés localement
 ├── src/
-│   ├── utils.py               # Fonctions utilitaires partagées
-│   ├── train_baseline.py      # Entraînement initial du modèle
-│   ├── gradio_app.py          # Interface Gradio + feedback
-│   ├── dataset_versioning.py  # Gestion des versions de dataset
-│   ├── pipeline_retrain.py    # Pipeline ClearML de réentraînement
-│   └── watcher_trigger.py     # Détection et déclenchement auto
+│   ├── utils.py                  # Fonctions utilitaires partagées
+│   ├── download_dataset.py       # Téléchargement dataset Cats vs Dogs
+│   ├── train_baseline.py         # Entraînement initial du modèle
+│   ├── gradio_app.py             # Interface Gradio + feedback
+│   ├── dataset_versioning.py     # Gestion des versions de dataset
+│   ├── pipeline_retrain.py       # Pipeline ClearML de réentraînement
+│   └── watcher_trigger.py        # Détection et déclenchement auto
 └── requirements.txt
 ```
 
