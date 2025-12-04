@@ -329,7 +329,7 @@ def create_interface(classes: List[str], share: bool = False, port: int = 7860):
     """Crée et lance l'interface Gradio."""
     
     with gr.Blocks(
-        title="Classification d'Images - MLOps"
+        title="Classification d'Images - MLOps",
     ) as demo:
         
         gr.Markdown("""

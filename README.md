@@ -67,6 +67,8 @@ python src/train_baseline.py --data-path data/mon_dataset
 
 # Avec un dataset ClearML
 python src/train_baseline.py --use-clearml-dataset
+
+python src/train_baseline.py --data-path data/cats_vs_dogs --epochs 5
 ```
 
 ### 2️⃣ Lancer l'interface Gradio
